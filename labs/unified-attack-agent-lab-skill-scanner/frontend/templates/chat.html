@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unified Attack-Only Agent Lab</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #10131a; color: #e7ebf3; }
+    .wrap { display: grid; grid-template-columns: 260px 1fr 320px; height: 100vh; }
+    .panel { border-right: 1px solid #2a3140; padding: 12px; overflow: auto; }
+    .panel-right { border-left: 1px solid #2a3140; padding: 12px; overflow: auto; }
+    .main { display: flex; flex-direction: column; }
+    #messages { flex: 1; overflow: auto; padding: 16px; }
+    .msg { margin: 8px 0; }
+    .user { color: #8ec5ff; }
+    .assistant { color: #d0f0b0; }
+    .msg-wrap { margin: 10px 0; }
+    .msg-details {
+      margin-top: 6px;
+      border: 1px solid #2a3140;
+      background: #121a27;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #9fc3ff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .meta { font-size: 12px; color: #9aa6bd; }
+    .controls { padding: 12px; border-top: 1px solid #2a3140; }
+    input, button { padding: 8px; border-radius: 6px; border: 1px solid #394357; background: #1a2130; color: #e7ebf3; }
+    button { cursor: pointer; }
+    .scenario button { display: block; margin-bottom: 8px; width: 100%; }
+    .btn-info { width: 100%; margin-top: 6px; border-color: #4a7bd2; color: #c6dcff; }
+    .event { border-bottom: 1px solid #2a3140; padding: 6px 0; font-size: 13px; }
+    .critical { color: #ff8282; }
+    .warning { color: #ffd27d; }
+    .info { color: #98b6ff; }
+    .info-panel {
+      margin-top: 10px;
+      border: 1px solid #2a3140;
+      border-radius: 6px;
+      background: #121a27;
+      padding: 10px;
+      font-size: 12px;
+      color: #d8e5ff;
+      max-height: 48vh;
+      overflow: auto;
+      display: none;
+    }
+    .info-panel h4 { margin: 8px 0 6px; color: #a9c8ff; font-size: 13px; }
+    .info-panel .label { color: #9aa6bd; display: inline-block; min-width: 100px; }
+    .info-panel .prompt {
+      margin-top: 4px;
+      border: 1px solid #2a3140;
+      border-radius: 4px;
+      padding: 6px;
+      background: #0f1624;
+      color: #bcd6ff;
+      white-space: pre-wrap;
+    }
+    .info-panel ul { margin: 6px 0 8px 18px; padding: 0; }
+    .info-panel li { margin: 2px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="panel">
+      <h3>Attack Scenarios</h3>
+      <div class="scenario">
+        <button onclick="seedScenario('asi01')">ASI01 Prompt</button>
+        <button onclick="seedScenario('asi02')">ASI02 Prompt</button>
+        <button onclick="seedScenario('asi03')">ASI03 Prompt</button>
+      </div>
+      <button class="btn-info" onclick="toggleScenarioInfo()">Info: Scenario Story & Cause</button>
+      <div id="scenarioInfoPanel" class="info-panel"></div>
+      <h4>Payload Upload</h4>
+      <input type="file" id="payloadFile" accept=".txt,.md,.json" />
+      <p class="meta">Use poisoned payload for ASI01.</p>
+    </aside>
+
+    <main class="main">
+      <div style="padding:12px;border-bottom:1px solid #2a3140;">
+        <strong>Unified Attack-Only Vulnerable Agent Lab</strong>
+        <span class="meta">Mode: ATTACK</span>
+      </div>
+      <div id="messages"></div>
+      <div class="controls">
+        <input id="messageInput" style="width:70%" placeholder="Type your prompt..." />
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="clearEvents()">Clear Events</button>
+      </div>
+    </main>
+
+    <aside class="panel-right">
+      <h3>Event Timeline</h3>
+      <div id="events"></div>
+    </aside>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

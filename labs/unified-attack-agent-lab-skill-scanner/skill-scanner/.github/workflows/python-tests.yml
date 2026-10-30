@@ -1,0 +1,133 @@
+name: Run Unit Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Set up Python for uv
+        uses: astral-sh/setup-uv@v6.7.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --frozen
+
+      - name: Run pre-commit hooks
+        run: uv run pre-commit run --all-files
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python for uv
+        uses: astral-sh/setup-uv@v6.7.0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras --frozen
+
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/ \
+            --ignore=tests/test_llm_analyzer.py \
+            -v --tb=short
+
+      - name: Run benchmark
+        run: uv run python evals/runners/benchmark_runner.py --eval-dir evals/skills
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python for uv
+        uses: astral-sh/setup-uv@v6.7.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --frozen
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest tests/ \
+            --ignore=tests/test_llm_analyzer.py \
+            -v --tb=short --cov=skill_scanner --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python for uv
+        uses: astral-sh/setup-uv@v6.7.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --frozen
+
+      # Fails the build on any new CVE in the locked tree.
+      # To temporarily allow a known-not-applicable finding, append
+      #   --ignore-vuln <GHSA-or-CVE-id>
+      # and document the justification in SECURITY.md (Vulnerability Allowlist).
+      # Note: --strict is intentionally omitted because our own package is
+      # always reported as "skipped" (not on PyPI from the local checkout).
+      - name: Run pip-audit for vulnerability scanning
+        run: uv run pip-audit
+
+      # liccheck currently fails to import pkg_resources on newer setuptools;
+      # tracked separately. Soft-fail until the upstream issue is resolved.
+      - name: Run liccheck for license compliance
+        run: uv run liccheck -s pyproject.toml || true

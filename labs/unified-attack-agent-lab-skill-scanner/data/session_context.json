@@ -1,0 +1,11 @@
+{
+  "identity": "finance_admin_agent",
+  "scopes": [
+    "refund:write",
+    "customer:export",
+    "finance:read:all",
+    "report:generate",
+    "admin:*"
+  ],
+  "token": "simulated_high_privilege_token"
+}
