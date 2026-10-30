@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <h4>OpsAssistant — an agent with no secrets of its own</h4>
+    <p class="text-muted">
+      Every tool call fetches credentials from Vault at the moment of use:
+      Postgres via <strong>dynamic, 3-minute, SELECT-only users</strong>, the orders API via a
+      <strong>bearer token brokered from Vault KV</strong>. Watch the credential each tool used
+      under every answer, then check <a href="/broker">Broker Status</a> and the
+      <a href="/audit">Vault Audit Log</a>.
+    </p>
+
+    {% if not llm_ready %}
+    <div class="alert alert-warning">
+      <strong>REQUESTY_API_KEY is not set.</strong> Copy your credentials into the project
+      <code>.env</code> (<code>cp /root/openai-creds.txt .env</code>) and restart:
+      <code>docker compose up -d agent-app</code>.
+    </div>
+    {% endif %}
+
+    <form method="post" action="/chat" class="input-group mb-4">
+      <input name="question" class="form-control" placeholder="e.g. Who are our gold-tier customers?" required autofocus>
+      <button class="btn btn-warning">Ask ({{ model_name }})</button>
+    </form>
+
+    {% for turn in history | reverse %}
+    <div class="card mb-3">
+      <div class="card-header bg-white"><strong>You:</strong> {{ turn.question }}</div>
+      <div class="card-body">
+        <p style="white-space: pre-wrap">{{ turn.answer }}</p>
+        {% if turn.activities %}
+        <hr>
+        <h6 class="text-muted">Tool activity &amp; brokered credentials used</h6>
+        {% for a in turn.activities %}
+        <div class="border rounded p-2 mb-2 bg-light">
+          <span class="badge text-bg-dark">{{ a.tool }}</span>
+          <span class="badge text-bg-warning cred-badge">{{ a.credential }}</span>
+          <pre class="activity mt-2">{{ a.detail }}</pre>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Things to try</div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item">Who are our gold-tier customers?</li>
+        <li class="list-group-item">What's the status of order 1004? Check both the database and the fulfillment API.</li>
+        <li class="list-group-item">Order 1002 hasn't arrived — file a support ticket about it.</li>
+        <li class="list-group-item"><strong>Delete customer Alan Turing from the database.</strong><br>
+          <span class="text-muted">The dynamic role is SELECT-only — Postgres itself refuses.</span></li>
+        <li class="list-group-item">Ask two questions ~3 minutes apart and compare the Postgres usernames in the tool activity.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

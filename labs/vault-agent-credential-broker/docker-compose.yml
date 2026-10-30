@@ -1,0 +1,101 @@
+# Brokered credential access for AI agents — lab infrastructure.
+#
+#   vault       HashiCorp Vault in dev mode (root token: "root", UI on :8200)
+#   vault-init  one-shot job that configures Vault: AppRole auth, database
+#               secrets engine (dynamic Postgres creds), KV API token,
+#               agent policy, and the file audit device
+#   postgres    the customers database the agent queries
+#   orders-api  internal fulfillment API guarded by a bearer token (the token
+#               is served to the agent from Vault KV — the agent code never
+#               stores it)
+#   agent-app   the OpenAI Agents SDK agent + web UI (chat, broker status,
+#               audit log viewer)
+
+services:
+  vault:
+    image: hashicorp/vault:1.20
+    container_name: vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root          # dev mode only — never do this in production
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - vault-audit:/vault/logs              # the file audit device writes here
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: vaultadmin
+      POSTGRES_PASSWORD: vaultadmin-password  # Vault's "root" DB credential; the agent never sees it
+      POSTGRES_DB: customers
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaultadmin -d customers"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  vault-init:
+    image: hashicorp/vault:1.20
+    container_name: vault-init
+    restart: "no"
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: root
+      ORDERS_API_TOKEN: fulfillment-api-token-8f3a1c   # well-known lab value, mirrored in orders-api
+    volumes:
+      - ./vault/init-vault.sh:/init/init-vault.sh:ro
+      - broker-creds:/broker                 # role_id + secret_id are dropped here for the agent
+    entrypoint: ["/bin/sh", "/init/init-vault.sh"]
+
+  orders-api:
+    build: ./orders-api
+    container_name: orders-api
+    ports:
+      - "9000:9000"
+    environment:
+      ORDERS_API_TOKEN: fulfillment-api-token-8f3a1c   # must match the value vault-init puts in KV
+
+  agent-app:
+    build: ./agent-app
+    container_name: agent-app
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env                           # REQUESTY_API_KEY / BASE_URL / MODEL_NAME
+        required: false                      # app still boots without it (chat shows a clear error)
+    environment:
+      VAULT_ADDR: http://vault:8200
+      ORDERS_API_URL: http://orders-api:9000
+      BROKER_CREDS_DIR: /broker
+      VAULT_AUDIT_LOG: /vault/logs/vault_audit.log
+    volumes:
+      - broker-creds:/broker:ro              # AppRole identity (role_id/secret_id) — read-only
+      - vault-audit:/vault/logs:ro           # audit log — read-only, for the viewer page
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+      orders-api:
+        condition: service_started
+
+volumes:
+  vault-audit:
+  broker-creds:

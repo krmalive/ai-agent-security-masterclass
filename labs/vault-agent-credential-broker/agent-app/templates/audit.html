@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Vault Audit Log</h4>
+<p class="text-muted">
+  Live view of Vault's file audit device (<code>{{ log_path }}</code>). Every request to
+  Vault — logins, credential mints, KV reads — lands here. Sensitive values are
+  <strong>HMAC'd</strong>, so the log proves what happened without leaking secrets.
+  Raw view: <code>docker compose exec vault cat /vault/logs/vault_audit.log | jq</code>
+</p>
+
+<form class="row g-2 mb-3" method="get" action="/audit">
+  <div class="col-auto">
+    <input name="path" class="form-control form-control-sm" placeholder="filter by path, e.g. database/creds" value="{{ filter_path }}">
+  </div>
+  <div class="col-auto"><button class="btn btn-sm btn-warning">Filter</button></div>
+  <div class="col-auto"><a class="btn btn-sm btn-outline-secondary" href="/audit">Clear</a></div>
+  <div class="col-auto">
+    <a class="btn btn-sm btn-outline-secondary" href="/audit?path=database/creds">DB creds</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/audit?path=secret/data">KV reads</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/audit?path=auth/approle">AppRole logins</a>
+  </div>
+</form>
+
+<table class="table table-sm table-striped small">
+  <thead>
+    <tr><th>Time (UTC)</th><th>Type</th><th>Op</th><th>Path</th><th>Identity</th><th>Policies</th><th>Client</th><th>Error</th></tr>
+  </thead>
+  <tbody>
+    {% for e in entries %}
+    <tr>
+      <td class="text-nowrap">{{ e.time }}</td>
+      <td><span class="badge {% if e.type == 'request' %}text-bg-secondary{% else %}text-bg-info{% endif %}">{{ e.type }}</span></td>
+      <td>{{ e.operation }}</td>
+      <td><code>{{ e.path }}</code></td>
+      <td>{{ e.display_name }}</td>
+      <td><code class="small">{{ e.policies }}</code></td>
+      <td>{{ e.remote }}</td>
+      <td class="text-danger">{{ e.error }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="text-muted">No audit entries yet (or the log volume isn't mounted).</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

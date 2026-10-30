@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Broker Status</h4>
+<p class="text-muted">
+  What the agent currently holds. Note that everything here was issued by Vault
+  (<code>{{ status.vault_addr }}</code>) — nothing is baked into the agent's code or config.
+</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Vault identity (AppRole)</div>
+      <div class="card-body small">
+        {% if status.token %}
+        <p class="mb-1"><strong>Token accessor:</strong> <code>{{ status.token.accessor }}</code></p>
+        <p class="mb-1"><strong>Policies:</strong> <code>{{ status.token.policies | join(', ') }}</code></p>
+        <p class="mb-0"><strong>Token TTL:</strong> {{ status.token.ttl }}s</p>
+        {% else %}
+        <p class="text-muted mb-0">Not logged in yet — the broker logs in lazily on the first tool call.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100 border-warning">
+      <div class="card-header">Dynamic Postgres credentials</div>
+      <div class="card-body small">
+        {% if status.db %}
+        <p class="mb-1"><strong>Username:</strong> <code>{{ status.db.username }}</code></p>
+        <p class="mb-1"><strong>Lease:</strong> <code>{{ status.db.lease_id }}</code></p>
+        <p class="mb-1"><strong>Issued:</strong> {{ status.db.acquired }} (TTL {{ status.db.ttl }}s)</p>
+        <p class="mb-0"><strong>Expires in:</strong>
+          <span class="badge {% if status.db.seconds_remaining < 30 %}text-bg-danger{% else %}text-bg-success{% endif %}">
+            {{ status.db.seconds_remaining }}s
+          </span>
+          — then Vault drops this Postgres role entirely.
+        </p>
+        {% else %}
+        <p class="text-muted mb-0">No lease yet — ask the agent a database question first.</p>
+        {% endif %}
+        <form method="post" action="/broker/refresh" class="mt-2">
+          <button class="btn btn-sm btn-outline-warning">Mint fresh credentials now</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Orders API token (Vault KV)</div>
+      <div class="card-body small">
+        {% if status.api %}
+        <p class="mb-1"><strong>Token:</strong> <code>{{ status.api.masked }}</code></p>
+        <p class="mb-0"><strong>Source:</strong> {{ status.api.source }} (re-read every 60s)</p>
+        {% else %}
+        <p class="text-muted mb-0">Not fetched yet — ask the agent about an order first.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5>Broker event log</h5>
+<table class="table table-sm table-striped small">
+  <thead><tr><th style="width:8rem">Time</th><th style="width:10rem">Event</th><th>Detail</th></tr></thead>
+  <tbody>
+    {% for e in events %}
+    <tr>
+      <td>{{ e.time }}</td>
+      <td><span class="badge text-bg-secondary">{{ e.kind }}</span></td>
+      <td>{{ e.detail }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3" class="text-muted">No events yet — talk to the agent first.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
