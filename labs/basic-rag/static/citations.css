@@ -1,0 +1,123 @@
+.citation {
+  display: block;
+  margin-top: 16px;
+  border: 1px solid #cfd9cf;
+  border-left: 3px solid var(--green);
+  border-radius: 3px;
+  background: #f3f7f1;
+  color: #34423b;
+}
+
+.citation > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  color: #34423b;
+  cursor: pointer;
+  list-style: none;
+}
+
+.citation > summary::-webkit-details-marker {
+  display: none;
+}
+
+.citation > summary::after {
+  content: "+";
+  margin-left: 2px;
+  color: var(--green);
+  font: 700 15px var(--mono);
+}
+
+.citation[open] > summary::after {
+  content: "−";
+}
+
+.citation-status {
+  flex: 0 0 auto;
+  font: 700 9px var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.citation-summary-text {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.citation-summary-text code {
+  flex: 0 0 auto;
+  font: 600 10px var(--mono);
+  color: var(--green);
+}
+
+.citation-summary-text b {
+  overflow: hidden;
+  color: #34423b;
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citation-pages {
+  flex: 0 0 auto;
+  color: #65766d;
+  font: 9px var(--mono);
+}
+
+.citation-content {
+  padding: 0 12px 12px;
+  border-top: 1px solid #dce4dc;
+}
+
+.citation-location {
+  margin: 11px 0 10px;
+  font: 10px/1.45 var(--mono);
+  color: #65766d;
+}
+
+.citation blockquote {
+  margin: 0;
+  padding: 11px 12px;
+  border-left: 2px solid #a9bda9;
+  background: #fff;
+  color: #4c5b54;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.citation-missing {
+  padding: 12px;
+  border-color: #dfd6ba;
+  border-left-color: #b58a2e;
+  background: #faf6e9;
+}
+
+.citation-missing b {
+  font: 700 10px var(--mono);
+  color: #8b681f;
+}
+
+.citation-missing p {
+  margin: 7px 0 0;
+  color: #72674c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .citation-status {
+    display: none;
+  }
+
+  .citation-summary-text b {
+    display: none;
+  }
+}

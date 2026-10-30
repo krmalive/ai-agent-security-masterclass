@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic RAG Security Test Planner</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/citations.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Security Planner home">
+      <span class="brand-mark">S</span>
+      <span><small>APPSEC LAB</small>Agentic RAG Planner</span>
+    </a>
+    <div class="system-status" id="system-status"><i></i><span>Checking system</span></div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="kicker">OWASP WSTG × SHOPFAST</p>
+        <h1>Turn an application into a<br><em>tailored security test plan.</em></h1>
+        <p class="lede">Set the duration, priorities, scope, and testing constraints. The crew applies them while keeping OWASP WSTG v4.2 as the cited source.</p>
+      </div>
+      <div class="goal-card">
+        <label for="objective">PLANNING OBJECTIVE & CONSTRAINTS</label>
+        <textarea id="objective" rows="6">Build a prioritized, production-safe, three-day security testing plan for ShopFast using the OWASP Web Security Testing Guide v4.2.</textarea>
+        <button id="run-button" type="button">
+          <span>Generate testing plan</span><b aria-hidden="true">→</b>
+        </button>
+        <p id="run-help">Edit the duration or add constraints before running. WSTG v4.2 remains the source. One planning run at a time.</p>
+      </div>
+    </section>
+
+    <section class="stack-strip" aria-label="Technical stack">
+      <span><b>Framework</b>CrewAI 1.15</span>
+      <span><b>Knowledge</b>WSTG v4.2 PDF</span>
+      <span><b>Retrieval</b>PDFSearchTool</span>
+      <span><b>Vector store</b>ChromaDB</span>
+      <span><b>Models</b>Requesty proxy</span>
+    </section>
+
+    <section class="workspace">
+      <div class="workflow-panel panel">
+        <div class="panel-heading">
+          <div><span class="section-no">01</span><h2>Agent workflow</h2></div>
+          <span class="run-id" id="run-id">NO ACTIVE RUN</span>
+        </div>
+        <div class="agent-flow">
+          <article class="agent-card" data-agent="Application Analyst">
+            <span class="agent-index">1</span>
+          <div><h3>Application Analyst</h3><p>Greps ShopFast, follows key call paths, and maps the attack surface.</p></div>
+            <span class="agent-state">Waiting</span>
+          </article>
+          <span class="flow-line"></span>
+          <article class="agent-card" data-agent="WSTG Test Planner">
+            <span class="agent-index">2</span>
+            <div><h3>WSTG Test Planner</h3><p>Searches, evaluates, rejects, and fills coverage gaps.</p></div>
+            <span class="agent-state">Waiting</span>
+          </article>
+          <span class="flow-line"></span>
+          <article class="agent-card" data-agent="Plan Reviewer">
+            <span class="agent-index">3</span>
+            <div><h3>Plan Reviewer</h3><p>Verifies citations, safety, scope, and the time budget.</p></div>
+            <span class="agent-state">Waiting</span>
+          </article>
+        </div>
+      </div>
+
+      <div class="trace-panel panel">
+        <div class="panel-heading">
+          <div><span class="section-no">02</span><h2>Observable agent trace</h2></div>
+          <button class="text-button" id="clear-trace" type="button">Clear view</button>
+        </div>
+        <div class="trace-note">Tool calls and evidence are shown here. Private model reasoning is not exposed.</div>
+        <div class="trace" id="trace" aria-live="polite">
+          <div class="trace-empty" id="trace-empty"><span>▱</span><p>Start a run to watch targeted code searches, selective reads, retrieval queries, returned passages, citation checks, and coverage updates.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="report panel" id="report" hidden>
+      <div class="panel-heading report-head">
+        <div><span class="section-no">03</span><h2>Final testing plan</h2></div>
+        <button class="text-button" id="download-report" type="button">Download JSON</button>
+      </div>
+      <div id="report-content"></div>
+    </section>
+  </main>
+
+  <template id="trace-template">
+    <article class="trace-event">
+      <div class="trace-rail"><span></span></div>
+      <div class="trace-body"><div class="trace-meta"><b></b><time></time></div><p></p><details><summary>Inspect payload</summary><pre></pre></details></div>
+    </article>
+  </template>
+  <script src="/static/app.js"></script>
+</body>
+</html>

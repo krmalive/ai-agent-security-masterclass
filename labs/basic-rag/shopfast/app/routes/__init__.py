@@ -1,0 +1,1 @@
+"""ShopFast REST route modules."""

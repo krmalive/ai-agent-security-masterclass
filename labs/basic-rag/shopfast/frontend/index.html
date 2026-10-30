@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShopFast</title>
+</head>
+<body>
+  <header><a href="/">ShopFast</a><nav><a href="/account">Account</a><a href="/basket">Basket</a></nav></header>
+  <main>
+    <h1>Products</h1>
+    <label>Search <input id="search" type="search" maxlength="100"></label>
+    <label>Sort <select id="sort"><option value="name">Name</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option></select></label>
+    <p id="status" role="status"></p>
+    <section id="catalog" aria-live="polite"></section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
