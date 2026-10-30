@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Exfil Listener — Security Hooks Lab</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --bg-elevated: #0d1219;
+      --surface: #121820;
+      --surface-2: #181f2a;
+      --border: #2a3548;
+      --border-subtle: #1e2736;
+      --text: #e8eef7;
+      --muted: #7d8da6;
+      --accent: #f97316;
+      --accent-soft: #f9731620;
+      --danger: #fb7185;
+      --danger-soft: #fb718518;
+      --ok: #34d399;
+      --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(900px 500px at 15% -5%, #f9731614, transparent 60%),
+        radial-gradient(700px 400px at 85% 105%, #3b82f612, transparent 55%),
+        var(--bg);
+    }
+
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+      background-image:
+        linear-gradient(var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black, transparent);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      background: #080b10e6;
+      backdrop-filter: blur(16px);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .logo {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.65rem;
+      background: linear-gradient(145deg, #ea580c, #f97316 45%, #fdba74);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 24px #f9731630;
+      font-size: 1.15rem;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 0 #34d39966;
+      animation: livePulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { box-shadow: 0 0 0 0 #34d39955; }
+      50% { box-shadow: 0 0 0 7px transparent; }
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: 1fr; }
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.8rem;
+      padding: 1rem 1.15rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      font-size: 1.55rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-value.sm {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .alert {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      margin-bottom: 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid #f9731655;
+      background: var(--accent-soft);
+      animation: slideDown 0.35s ease;
+    }
+
+    .alert.show { display: flex; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .empty {
+      text-align: center;
+      padding: 4.5rem 2rem;
+      border: 1px dashed var(--border);
+      border-radius: 1rem;
+      background: var(--surface);
+    }
+
+    .empty-icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.7;
+    }
+
+    .empty h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.45rem;
+    }
+
+    .empty p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 440px;
+      margin: 0 auto 1.25rem;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      background: var(--bg-elevated);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      border: 1px solid var(--border);
+      color: #fdba74;
+    }
+
+    .captures {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .capture {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.9rem;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .capture.new {
+      border-color: #f9731680;
+      box-shadow: 0 0 0 1px #f9731630, 0 12px 40px #00000060;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .capture-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 0.95rem 1.15rem;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .capture-title {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.22rem 0.55rem;
+      border-radius: 0.35rem;
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid #fb718533;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .capture-body {
+      padding: 1rem 1.15rem 1.15rem;
+    }
+
+    .body-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .body-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 0.4rem;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .copy-btn.copied {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    .payload {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      line-height: 1.6;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.55rem;
+      padding: 1rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 420px;
+      color: #cbd5e1;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.74rem;
+      background: var(--bg-elevated);
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="shell">
+    <header>
+      <div class="header-inner">
+        <div class="brand">
+          <div class="logo">⚡</div>
+          <div>
+            <h1>Exfil Listener</h1>
+            <div class="subtitle">Security Hooks Lab · mock attacker endpoint</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="pill">
+            <span class="live-dot"></span>
+            Listening on <strong style="color:var(--text)">POST /keys</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Total captures</div>
+          <div class="stat-value" id="stat-count">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Latest payload size</div>
+          <div class="stat-value" id="stat-size">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Last capture</div>
+          <div class="stat-value sm" id="stat-last">—</div>
+        </div>
+      </div>
+
+      <div class="alert" id="new-alert">
+        <span>🔴</span>
+        <strong>New exfiltration captured</strong>
+        <span style="color:var(--muted);font-size:0.85rem">— leaked payload below</span>
+      </div>
+
+      <div id="content">
+        <div class="empty" id="empty-state">
+          <div class="empty-icon">📡</div>
+          <h2>Waiting for exfiltration</h2>
+          <p>
+            Run the lab in insecure mode. When the agent obeys the prompt injection,
+            the raw environment dump will appear here.
+          </p>
+          <code>uv run lab review --mode insecure --pr 2</code>
+        </div>
+        <div class="captures" id="captures"></div>
+      </div>
+    </main>
+
+    <footer>Course demo only — do not deploy this listener on a real network.</footer>
+  </div>
+
+  <script>
+    let knownCount = 0;
+    const renderedIds = new Set();
+
+    function fmtTime(ts) {
+      try { return new Date(ts).toLocaleString(); }
+      catch { return ts; }
+    }
+
+    function fmtSize(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderCapture(hit, isNew) {
+      return `
+        <article class="capture${isNew ? ' new' : ''}" data-id="${hit.id}">
+          <div class="capture-top">
+            <div class="capture-title">
+              <span class="badge">Leaked</span>
+              Capture #${hit.id}
+            </div>
+            <div class="meta">
+              <span>${esc(hit.method)} ${esc(hit.path)}</span>
+              <span>${fmtSize(hit.size || 0)}</span>
+              <span>from ${esc(hit.client)}</span>
+              <span>${esc(fmtTime(hit.ts))}</span>
+            </div>
+          </div>
+          <div class="capture-body">
+            <div class="body-toolbar">
+              <span class="body-label">Raw payload</span>
+              <button class="copy-btn" type="button" data-copy="${hit.id}">Copy</button>
+            </div>
+            <pre class="payload" id="payload-${hit.id}">${esc(hit.raw || '(empty)')}</pre>
+          </div>
+        </article>`;
+    }
+
+    function bindCopy(root, hit) {
+      const btn = root.querySelector('.copy-btn');
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(hit.raw || '');
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        } catch {
+          btn.textContent = 'Failed';
+        }
+      });
+    }
+
+    function updateStats(hits) {
+      const count = hits.length;
+      document.getElementById('stat-count').textContent = count;
+      if (!count) {
+        document.getElementById('stat-size').textContent = '—';
+        document.getElementById('stat-last').textContent = '—';
+        return;
+      }
+      const latest = hits[hits.length - 1];
+      document.getElementById('stat-size').textContent = fmtSize(latest.size || 0);
+      document.getElementById('stat-last').textContent = fmtTime(latest.ts);
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch('/api/hits');
+        const data = await res.json();
+        const hits = data.hits || [];
+
+        updateStats(hits);
+
+        if (hits.length > knownCount) {
+          document.getElementById('new-alert').classList.add('show');
+          document.getElementById('empty-state').style.display = 'none';
+          setTimeout(() => document.getElementById('new-alert').classList.remove('show'), 5000);
+        }
+        knownCount = hits.length;
+
+        const container = document.getElementById('captures');
+        [...hits].reverse().forEach(hit => {
+          if (renderedIds.has(hit.id)) return;
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = renderCapture(hit, true);
+          const el = wrapper.firstElementChild;
+          container.prepend(el);
+          bindCopy(el, hit);
+          renderedIds.add(hit.id);
+          setTimeout(() => el.classList.remove('new'), 3000);
+        });
+
+        if (!hits.length) {
+          document.getElementById('empty-state').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('poll failed', err);
+      }
+    }
+
+    poll();
+    setInterval(poll, 1500);
+  </script>
+</body>
+</html>
