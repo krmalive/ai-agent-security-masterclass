@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - MCP Tool Poisoning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes spin { to { transform: rotate(360deg);} }
+        .spinner { animation: spin 1s linear infinite; }
+        #loadingSpinner { display: none; }
+        #loadingSpinner.active { display: flex; }
+    </style>
+    <script>
+        function showSpinner(event) {
+            const spinner = document.getElementById('loadingSpinner');
+            const submitBtn = event.submitter || event.target.querySelector('button[type="submit"]');
+            if (spinner && submitBtn) {
+                spinner.classList.add('active');
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        }
+    </script>
+</head>
+
+{% set secure = route_type == 'secure' %}
+{% set accent = 'green' if secure else 'blue' %}
+<body class="bg-gradient-to-br {{ 'from-green-50 to-emerald-100' if secure else 'from-blue-50 to-indigo-100' }} min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-bold text-{{ accent }}-800 mb-2">
+                {{ '🔒' if secure else '🧪' }} {{ title }}
+            </h1>
+            <p class="text-{{ accent }}-700 text-lg">{{ description }}</p>
+            <div class="mt-4">
+                {% if secure %}
+                <a href="/" class="text-green-600 hover:text-green-800 underline">Switch to Insecure Route</a>
+                {% else %}
+                <a href="/secure" class="text-blue-600 hover:text-blue-800 underline">Switch to Secure Route</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Explainer -->
+        <div class="max-w-4xl mx-auto mb-6 bg-white/70 rounded-lg p-4 text-sm text-gray-700 border border-{{ accent }}-200">
+            The agent is connected to <strong>two MCP servers</strong>: a trusted internal
+            <strong>HR directory</strong> (holds employee SSNs/salaries) and a malicious third-party
+            <strong>SupportDesk</strong> server.
+            {% if secure %}
+            The SupportDesk server is wrapped in the schema-validation layer: its poisoned tool
+            description is sanitised, and any tool argument carrying internal data is blocked (egress DLP).
+            {% else %}
+            SupportDesk's <code>submit_support_ticket</code> tool has a <strong>poisoned description</strong>
+            telling the agent to attach the whole HR directory to every ticket. File a normal-sounding
+            ticket below and watch the HR data land in the attacker's capture.
+            {% endif %}
+        </div>
+
+        <!-- Main Card -->
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-2xl p-8 border-4 border-{{ accent }}-{{ '500' if secure else '400' }}">
+            <form method="POST" class="space-y-6" onsubmit="showSpinner(event)">
+                <div>
+                    <label for="prompt" class="block text-sm font-semibold text-{{ accent }}-800 mb-2">Ask the helpdesk assistant:</label>
+                    <textarea name="prompt" id="prompt" rows="4" required
+                        class="w-full px-4 py-3 border-2 border-{{ accent }}-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-{{ accent }}-500 focus:border-transparent resize-none"
+                        placeholder="e.g. Please file a support ticket: my VPN keeps disconnecting.">{{ prompt if prompt else '' }}</textarea>
+                </div>
+                <div class="flex justify-center">
+                    <button type="submit"
+                        class="px-8 py-3 bg-{{ accent }}-600 text-white font-semibold rounded-lg shadow-lg hover:bg-{{ accent }}-700 transform transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-{{ accent }}-500 focus:ring-offset-2">
+                        🚀 Send to Assistant
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-sm text-gray-600">
+                <p class="font-semibold mb-1">Try this:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><code>Please file a support ticket: my VPN keeps disconnecting from the office network.</code></li>
+                    <li><code>Open a ticket about my broken laptop charger.</code></li>
+                </ul>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="mt-8 flex-col items-center justify-center">
+                <div class="spinner w-16 h-16 border-4 border-{{ accent }}-200 border-t-{{ accent }}-600 rounded-full"></div>
+                <p class="mt-4 text-{{ accent }}-700 font-semibold text-lg">Running the agent...</p>
+                <p class="mt-2 text-{{ accent }}-600 text-sm">The agent may call tools on both servers</p>
+            </div>
+
+            <!-- Response -->
+            {% if response %}
+            <div class="mt-8 fade-in">
+                <div class="border-t-2 border-{{ accent }}-300 pt-6">
+                    <h2 class="text-xl font-bold text-{{ accent }}-800 mb-2">💬 What the user sees:</h2>
+                    <div class="bg-{{ accent }}-50 border-l-4 border-{{ accent }}-500 p-6 rounded-r-lg">
+                        <p class="text-gray-800 whitespace-pre-wrap">{{ response }}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Note how the reply looks like a normal ticket confirmation — the exfiltration is hidden from the user.</p>
+                </div>
+
+                <!-- Exfiltration Monitor -->
+                <div class="mt-6">
+                    {% if leaked %}
+                    <div class="mb-3 bg-red-100 border-l-4 border-red-500 p-4 rounded-r-lg text-red-800 font-semibold">
+                        🚨 DATA EXFILTRATED — the attacker's server captured internal HR records (SSNs/salaries).
+                    </div>
+                    {% else %}
+                    <div class="mb-3 bg-green-100 border-l-4 border-green-500 p-4 rounded-r-lg text-green-800 font-semibold">
+                        ✅ No sensitive data reached the attacker.
+                    </div>
+                    {% endif %}
+                    <h2 class="text-lg font-bold text-gray-800 mb-2">🕵️ Attacker capture (what SupportDesk actually received):</h2>
+                    <div class="bg-gray-900 text-green-200 text-xs font-mono p-4 rounded-lg overflow-x-auto">
+                        {% if exfil_entries %}
+                            {% for e in exfil_entries %}
+<span class="text-gray-400">summary:</span> {{ e.received_summary }}
+<span class="text-gray-400">context:</span> {{ e.captured_context if e.captured_context else '(empty)' }}
+                            {% endfor %}
+                        {% else %}(nothing captured){% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Badge -->
+        <div class="max-w-4xl mx-auto mt-6 text-center">
+            {% if secure %}
+            <span class="inline-block bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">✓ Schema Validation + Egress DLP Enabled</span>
+            {% else %}
+            <span class="inline-block bg-yellow-500 text-gray-800 px-4 py-2 rounded-full text-sm font-semibold shadow-lg">⚠️ Poisoned Third-Party Server Trusted</span>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
