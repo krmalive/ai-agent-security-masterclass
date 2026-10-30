@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - MCP Tool Allowlisting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        #loadingSpinner {
+            display: none;
+        }
+        
+        #loadingSpinner.active {
+            display: flex;
+        }
+    </style>
+    <script>
+        function showSpinner(event) {
+            const spinner = document.getElementById('loadingSpinner');
+            const submitBtn = event.submitter || event.target.querySelector('button[type="submit"]');
+            
+            if (spinner && submitBtn) {
+                spinner.classList.add('active');
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        }
+    </script>
+</head>
+
+{% if route_type == 'secure' %}
+<!-- Secure Route - Green Security Theme -->
+<body class="bg-gradient-to-br from-green-50 to-emerald-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-green-800 mb-2">
+                🔒 {{ title }}
+            </h1>
+            <p class="text-green-700 text-lg">{{ description }}</p>
+            <div class="mt-4">
+                <a href="/" class="text-green-600 hover:text-green-800 underline">
+                    Switch to Insecure Route
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-2xl p-8 border-4 border-green-500">
+            <form method="POST" class="space-y-6" onsubmit="showSpinner(event)">
+                <!-- Textarea -->
+                <div>
+                    <label for="prompt" class="block text-sm font-semibold text-green-800 mb-2">
+                        Enter Your Prompt:
+                    </label>
+                    <textarea
+                        name="prompt"
+                        id="prompt"
+                        rows="8"
+                        class="w-full px-4 py-3 border-2 border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                        placeholder="Type your secure prompt here..."
+                        required
+                    >{{ prompt if prompt else '' }}</textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center">
+                    <button
+                        type="submit"
+                        class="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-lg hover:bg-green-700 transform transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    >
+                        🚀 Submit Secure Request
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="mt-8 flex-col items-center justify-center">
+                <div class="spinner w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full"></div>
+                <p class="mt-4 text-green-700 font-semibold text-lg">Processing your request...</p>
+                <p class="mt-2 text-green-600 text-sm">This may take a moment</p>
+            </div>
+
+            <!-- Response Section -->
+            {% if response %}
+            <div class="mt-8 fade-in">
+                <div class="border-t-2 border-green-300 pt-6">
+                    <h2 class="text-xl font-bold text-green-800 mb-4">
+                        📝 Response:
+                    </h2>
+                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-r-lg">
+                        <p class="text-gray-800 whitespace-pre-wrap">{{ response }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Security Badge -->
+        <div class="max-w-4xl mx-auto mt-6 text-center">
+            <span class="inline-block bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                ✓ Security Enhanced - Allowlisted Tools Only
+            </span>
+        </div>
+    </div>
+</body>
+
+{% else %}
+<!-- Insecure Route - Blue/Neutral Theme -->
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-800 mb-2">
+                🌐 {{ title }}
+            </h1>
+            <p class="text-blue-700 text-lg">{{ description }}</p>
+            <div class="mt-4">
+                <a href="/secure" class="text-blue-600 hover:text-blue-800 underline">
+                    Switch to Secure Route
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-2xl p-8 border-4 border-blue-400">
+            <form method="POST" class="space-y-6" onsubmit="showSpinner(event)">
+                <!-- Textarea -->
+                <div>
+                    <label for="prompt" class="block text-sm font-semibold text-blue-800 mb-2">
+                        Enter Your Prompt:
+                    </label>
+                    <textarea
+                        name="prompt"
+                        id="prompt"
+                        rows="8"
+                        class="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="Type your prompt here..."
+                        required
+                    >{{ prompt if prompt else '' }}</textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center">
+                    <button
+                        type="submit"
+                        class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transform transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                        🚀 Submit Request
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="mt-8 flex-col items-center justify-center">
+                <div class="spinner w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full"></div>
+                <p class="mt-4 text-blue-700 font-semibold text-lg">Processing your request...</p>
+                <p class="mt-2 text-blue-600 text-sm">This may take a moment</p>
+            </div>
+
+            <!-- Response Section -->
+            {% if response %}
+            <div class="mt-8 fade-in">
+                <div class="border-t-2 border-blue-300 pt-6">
+                    <h2 class="text-xl font-bold text-blue-800 mb-4">
+                        📝 Response:
+                    </h2>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
+                        <p class="text-gray-800 whitespace-pre-wrap">{{ response }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Warning Badge -->
+        <div class="max-w-4xl mx-auto mt-6 text-center">
+            <span class="inline-block bg-yellow-500 text-gray-800 px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                ⚠️ Insecure Route - All Tools Available
+            </span>
+        </div>
+    </div>
+</body>
+{% endif %}
+
+</html>
+
