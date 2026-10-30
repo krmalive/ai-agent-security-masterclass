@@ -1,0 +1,63 @@
+# MCP Gateway Security Lab -- everything runs as containers, nothing else needed.
+#
+#   docker compose up --build
+#
+# Services:
+#   auth-server   custom token-introspection endpoint (the auth you develop)
+#   mcp-weather   well-behaved backend MCP server
+#   mcp-notes     backend MCP server that can be "compromised" at runtime
+#   gateway       the MCP Gateway (auth + tool-registration enforcement)
+#
+# Only the gateway is published to the host (port 8080). The backends and the
+# auth-server are reachable only on the internal docker network -- that is the
+# whole point: clients must go through the gateway.
+
+services:
+  auth-server:
+    build: ./auth-server
+    container_name: lab-auth-server
+    # Exposed to host only so you can curl /introspect during the lab.
+    ports:
+      - "9000:8000"
+
+  mcp-weather:
+    build: ./mcp-weather
+    container_name: lab-mcp-weather
+    # No host port on purpose: the gateway is the only way in.
+    expose:
+      - "8000"
+
+  mcp-notes:
+    build: ./mcp-notes
+    container_name: lab-mcp-notes
+    # Published so the lab can trigger the /admin/compromise "rug pull".
+    ports:
+      - "9100:8000"
+
+  gateway:
+    build: ./gateway
+    container_name: lab-gateway
+    depends_on:
+      - auth-server
+      - mcp-weather
+      - mcp-notes
+    environment:
+      AUTH_INTROSPECT_URL: "http://auth-server:8000/introspect"
+      # Flip to "false" to demonstrate an UNPROTECTED gateway (tool pinning off).
+      ENFORCE_TOOL_REGISTRY: "true"
+    ports:
+      - "8080:8000"
+
+  # The LLM agent (gpt-4o via Requesty). Does NOT start with `up` -- it is a
+  # one-shot command. Run it like:
+  #   docker compose run --rm client --token tok_alice_weather_001 --prompt "Weather in London?"
+  # Requires REQUESTY_API_KEY in your environment or .env.
+  client:
+    build: ./client
+    profiles: ["agent"]
+    environment:
+      GATEWAY_URL: "http://gateway:8000/mcp"
+      REQUESTY_API_KEY: "${REQUESTY_API_KEY:-}"
+      MODEL: "${MODEL:-openai/gpt-4o}"
+    depends_on:
+      - gateway

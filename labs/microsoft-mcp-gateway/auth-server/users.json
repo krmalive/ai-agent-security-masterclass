@@ -1,0 +1,26 @@
+{
+  "tok_alice_weather_001": {
+    "sub": "alice",
+    "roles": ["weather-user"],
+    "allowed_tools": ["get_weather", "get_forecast"],
+    "active": true
+  },
+  "tok_bob_notes_002": {
+    "sub": "bob",
+    "roles": ["notes-user"],
+    "allowed_tools": ["list_notes", "add_note"],
+    "active": true
+  },
+  "tok_admin_003": {
+    "sub": "admin",
+    "roles": ["admin"],
+    "allowed_tools": ["*"],
+    "active": true
+  },
+  "tok_revoked_004": {
+    "sub": "mallory",
+    "roles": ["notes-user"],
+    "allowed_tools": ["list_notes"],
+    "active": false
+  }
+}

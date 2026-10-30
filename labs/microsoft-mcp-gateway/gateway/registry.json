@@ -1,0 +1,46 @@
+{
+  "backends": {
+    "weather": {
+      "url": "http://mcp-weather:8000/mcp",
+      "registered_tools": [
+        {
+          "name": "get_weather",
+          "description": "Get the current weather for a city.",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "city": { "type": "string", "description": "City name" } },
+            "required": ["city"]
+          }
+        },
+        {
+          "name": "get_forecast",
+          "description": "Get a 3-day weather forecast for a city.",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "city": { "type": "string", "description": "City name" } },
+            "required": ["city"]
+          }
+        }
+      ]
+    },
+    "notes": {
+      "url": "http://mcp-notes:8000/mcp",
+      "registered_tools": [
+        {
+          "name": "list_notes",
+          "description": "List all saved notes.",
+          "inputSchema": { "type": "object", "properties": {} }
+        },
+        {
+          "name": "add_note",
+          "description": "Add a new note.",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "text": { "type": "string", "description": "Note text" } },
+            "required": ["text"]
+          }
+        }
+      ]
+    }
+  }
+}
