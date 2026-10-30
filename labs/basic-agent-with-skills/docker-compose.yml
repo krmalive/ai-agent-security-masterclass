@@ -1,0 +1,12 @@
+services:
+  metasploitable:
+    image: tleemcjr/metasploitable2
+    container_name: metasploitable
+    platform: linux/amd64
+    command: /bin/sh -c "/bin/services.sh && tail -f /dev/null"
+    networks:
+      - scan-lab
+
+networks:
+  scan-lab:
+    name: basic-agent-skill-scan-lab

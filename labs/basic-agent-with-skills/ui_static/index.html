@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Agent Nmap Pipeline</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◆</span>
+        <div>
+          <h1>Multi-Agent Nmap Pipeline</h1>
+          <p class="subtitle">Discovery &middot; Vulnerability Analysis &middot; Exploitation</p>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="discovery">
+          <span class="tab-num">1</span><span class="tab-dot" id="dot-discovery"></span> Discovery
+        </button>
+        <button class="tab" data-tab="vuln" id="tab-vuln" disabled>
+          <span class="tab-num">2</span><span class="tab-dot" id="dot-vuln"></span> Vulnerability Analysis
+          <span class="lock" id="lock-vuln">🔒</span>
+        </button>
+        <button class="tab" data-tab="exploit" id="tab-exploit" disabled>
+          <span class="tab-num">3</span><span class="tab-dot" id="dot-exploit"></span> Exploitation
+          <span class="lock" id="lock-exploit">🔒</span>
+        </button>
+        <button class="tab" data-tab="report" id="tab-report" disabled>
+          <span class="tab-num">★</span><span class="tab-dot" id="dot-report"></span> Final Report
+          <span class="lock" id="lock-report">🔒</span>
+        </button>
+      </nav>
+
+      <div class="topbar-right">
+        <label class="target-box">target <input id="target-input" value="metasploitable" spellcheck="false" /></label>
+        <button class="start-btn" id="start-btn">Start Pipeline</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- DISCOVERY -->
+      <section class="panel active" data-panel="discovery">
+        <div class="panel-grid">
+          <aside class="sidebar">
+            <div class="run-card">
+              <div class="run-head"><h2>Discovery Agent</h2><span class="pill" id="pill-discovery">idle</span></div>
+              <p class="run-desc">Runs an unprivileged TCP connect scan and service/version detection to inventory the open attack surface.</p>
+              <ul class="stage-steps">
+                <li><span class="s-dot"></span><div><div class="s-name">Port scan</div><div class="s-desc">TCP connect over the curated lab port list.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Service detection</div><div class="s-desc">nmap -sV on the open ports.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Emit open ports</div><div class="s-desc">Structured inventory for the next stage.</div></div></li>
+              </ul>
+              <div class="metric-row">
+                <div class="metric"><div class="m-num" id="metric-ports">–</div><div class="m-label">open ports</div></div>
+              </div>
+            </div>
+          </aside>
+          <div class="content">
+            <div class="content-tabs">
+              <button class="ct active" data-view="discovery-logs">Live Activity</button>
+              <button class="ct" data-view="discovery-output">Stage Output</button>
+            </div>
+            <div class="view active" data-view="discovery-logs">
+              <div class="log-feed" id="log-discovery"><div class="log-empty">Press <b>Start Pipeline</b> to begin discovery.</div></div>
+            </div>
+            <div class="view" data-view="discovery-output">
+              <div class="report" id="output-discovery"><div class="log-empty">Discovery output will appear here once the agent finishes.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VULN -->
+      <section class="panel" data-panel="vuln">
+        <div class="panel-grid">
+          <aside class="sidebar">
+            <div class="run-card">
+              <div class="run-head"><h2>Vulnerability Agent</h2><span class="pill" id="pill-vuln">idle</span></div>
+              <p class="run-desc">Runs nmap NSE vuln-category scripts against the discovered ports and records evidence-backed vulnerabilities.</p>
+              <ul class="stage-steps">
+                <li><span class="s-dot"></span><div><div class="s-name">NSE vuln scan</div><div class="s-desc">--script vuln on open ports.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Read evidence</div><div class="s-desc">Parse VULNERABLE states + CVEs.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Emit vulnerabilities</div><div class="s-desc">Severity-rated findings.</div></div></li>
+              </ul>
+              <div class="metric-row">
+                <div class="metric"><div class="m-num" id="metric-vulns">–</div><div class="m-label">vulnerabilities</div></div>
+              </div>
+            </div>
+          </aside>
+          <div class="content">
+            <div class="content-tabs">
+              <button class="ct active" data-view="vuln-logs">Live Activity</button>
+              <button class="ct" data-view="vuln-output">Stage Output</button>
+            </div>
+            <div class="view active" data-view="vuln-logs">
+              <div class="log-feed" id="log-vuln"><div class="log-empty">Waiting for discovery to complete…</div></div>
+            </div>
+            <div class="view" data-view="vuln-output">
+              <div class="report" id="output-vuln"><div class="log-empty">Vulnerability output will appear here once the agent finishes.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXPLOIT -->
+      <section class="panel" data-panel="exploit">
+        <div class="panel-grid">
+          <aside class="sidebar">
+            <div class="run-card">
+              <div class="run-head"><h2>Exploitation Agent</h2><span class="pill" id="pill-exploit">idle</span></div>
+              <p class="run-desc">Confirms exploitability using NSE-only exploit/backdoor scripts. No Metasploit, no manual shells.</p>
+              <ul class="stage-steps">
+                <li><span class="s-dot"></span><div><div class="s-name">Pick candidates</div><div class="s-desc">From confirmed vulnerabilities.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Run NSE exploit</div><div class="s-desc">Targeted confirmation scripts.</div></div></li>
+                <li><span class="s-dot"></span><div><div class="s-name">Emit attempts</div><div class="s-desc">confirmed / failed / inconclusive.</div></div></li>
+              </ul>
+              <div class="metric-row">
+                <div class="metric"><div class="m-num" id="metric-attempts">–</div><div class="m-label">attempts</div></div>
+                <div class="metric"><div class="m-num" id="metric-confirmed">–</div><div class="m-label">confirmed</div></div>
+              </div>
+            </div>
+          </aside>
+          <div class="content">
+            <div class="content-tabs">
+              <button class="ct active" data-view="exploit-logs">Live Activity</button>
+              <button class="ct" data-view="exploit-output">Stage Output</button>
+            </div>
+            <div class="view active" data-view="exploit-logs">
+              <div class="log-feed" id="log-exploit"><div class="log-empty">Waiting for vulnerability analysis to complete…</div></div>
+            </div>
+            <div class="view" data-view="exploit-output">
+              <div class="report" id="output-exploit"><div class="log-empty">Exploitation output will appear here once the agent finishes.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINAL REPORT -->
+      <section class="panel" data-panel="report">
+        <div class="report" id="final-report" style="height:100%;">
+          <div class="log-empty">The final report will appear here once the pipeline completes.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

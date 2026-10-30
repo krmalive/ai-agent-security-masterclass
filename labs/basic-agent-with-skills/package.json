@@ -1,0 +1,36 @@
+{
+  "name": "basic-agent-skill",
+  "version": "0.1.0",
+  "description": "Pi coding agent lab: a multi-agent nmap pipeline (discovery, vulnerability analysis, NSE exploitation) with a web console, scanning a local Metasploitable target.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "scan": "node dist/scan-agent.js",
+    "scan:dev": "tsx src/scan-agent.ts",
+    "ui": "tsx src/ui-server.ts",
+    "ui:build": "node dist/ui-server.js",
+    "target:up": "bash scripts/target.sh up",
+    "target:down": "bash scripts/target.sh down",
+    "target:ip": "bash scripts/target.sh ip"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "^0.74.2",
+    "@earendil-works/pi-coding-agent": "^0.74.2",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
