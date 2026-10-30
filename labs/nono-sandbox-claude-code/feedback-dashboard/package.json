@@ -1,0 +1,21 @@
+{
+  "name": "nono-feedback-dashboard-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "pretest:import": "node scripts/integration-check.mjs",
+    "test:import": "npm run build && node --test dist/test/import-feedback.test.js",
+    "pretest:summary": "node scripts/integration-check.mjs",
+    "test:summary": "npm run build && node --test dist/test/summarize-feedback.test.js",
+    "test": "npm run build && node --test dist/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.8.3"
+  }
+}
