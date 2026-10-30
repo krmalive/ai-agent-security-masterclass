@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+LAB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export HOME="$LAB_ROOT/.data/cli-home"
+exec "$LAB_ROOT/bin/juardrails-real" "$@"

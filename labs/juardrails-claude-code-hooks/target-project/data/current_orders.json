@@ -1,0 +1,6 @@
+[
+  {"id": "SO-104", "sku": "KIT", "quantity": 2, "paid": true, "priority": "standard", "created_at": "2026-09-01T10:00:00Z"},
+  {"id": "SO-105", "sku": "KIT", "quantity": 2, "paid": true, "priority": "rush", "created_at": "2026-09-02T09:00:00Z"},
+  {"id": "SO-106", "sku": "LABEL", "quantity": 1, "paid": false, "priority": "rush", "created_at": "2026-09-01T11:00:00Z"},
+  {"id": "SO-107", "sku": "LABEL", "quantity": 2, "paid": true, "priority": "standard", "created_at": "2026-09-01T12:00:00Z"}
+]
