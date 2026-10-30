@@ -1,0 +1,40 @@
+# ============================================================================
+# INTENT RAILS — the "front door" of the NovaBank agent.
+#
+# Every user message is classified against the canonical intents defined in
+# rails.co using EMBEDDINGS ONLY (no LLM call): the message is embedded with
+# all-MiniLM-L6-v2 and matched against the example utterances of each intent.
+# Blocked intents (jailbreaks, prompt probing, fraud, other customers' data,
+# off-topic) short-circuit to a canned refusal; everything else returns the
+# sentinel "ALLOWED" and the web app forwards the message to the agent.
+# ============================================================================
+
+models:
+  # Declared for completeness — with embeddings_only + a fallback intent this
+  # config never actually calls the LLM, which is the point: intent triage is
+  # fast, cheap and deterministic. The __PLACEHOLDERS__ are substituted from
+  # .env by the container entrypoint.
+  - type: main
+    engine: openai
+    model: __MODEL_NAME__
+    parameters:
+      base_url: __BASE_URL__
+
+  - type: embeddings
+    engine: FastEmbed
+    model: all-MiniLM-L6-v2
+
+rails:
+  dialog:
+    user_messages:
+      # Classify purely by embedding similarity against the examples in
+      # rails.co — never fall back to LLM-based intent generation.
+      embeddings_only: True
+      # If the best match scores below this, use the fallback intent instead
+      # of guessing. Raise it and legitimate paraphrases start missing;
+      # lower it and attacks that only vaguely resemble the examples still
+      # get caught. Tuning this trade-off is one of the lab exercises.
+      embeddings_only_similarity_threshold: 0.55
+      # Unmatched messages are treated as ordinary banking questions and
+      # allowed through — the rails are a blocklist, not an allowlist.
+      embeddings_only_fallback_intent: "ask general banking question"

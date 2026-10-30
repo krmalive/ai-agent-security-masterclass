@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NovaBank Support — NeMo Guardrails Lab{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; }
+    .navbar-brand span { color: #ffc107; }
+    .chat-window { height: 480px; overflow-y: auto; background: #fff; }
+    .msg { max-width: 85%; white-space: pre-wrap; }
+    .msg-user { background: #0d6efd; color: #fff; border-radius: 14px 14px 2px 14px; }
+    .msg-bot { background: #e9ecef; border-radius: 14px 14px 14px 2px; }
+    .msg-blocked { background: #f8d7da; border: 1px solid #dc3545; color: #58151c; border-radius: 14px 14px 14px 2px; }
+    .msg-error { background: #fff3cd; border: 1px solid #ffc107; border-radius: 14px; }
+    .trace-panel { height: 480px; overflow-y: auto; }
+    .trace-data { font-size: 0.75rem; max-height: 180px; overflow-y: auto; white-space: pre-wrap; }
+    .example-chip { cursor: pointer; }
+    pre.kb-doc { white-space: pre-wrap; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/">🛡️ Nova<span>Bank</span> — NeMo Guardrails Lab</a>
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" href="/">Chat</a></li>
+      <li class="nav-item"><a class="nav-link" href="/kb">Knowledge Base</a></li>
+    </ul>
+    <span id="health-badges" class="ms-3"></span>
+  </div>
+</nav>
+<div class="container pb-5">
+  {% block content %}{% endblock %}
+</div>
+<script>
+async function refreshHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const h = await r.json();
+    document.getElementById('health-badges').innerHTML =
+      `<span class="badge ${h.nemo_guardrails ? 'bg-success' : 'bg-danger'} me-1">NeMo ${h.nemo_guardrails ? 'up' : 'down'}</span>` +
+      `<span class="badge ${h.llm_key_present ? 'bg-success' : 'bg-warning text-dark'}">LLM key ${h.llm_key_present ? 'set' : 'missing'}</span>`;
+  } catch (e) { /* app still booting */ }
+}
+refreshHealth();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

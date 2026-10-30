@@ -1,0 +1,17 @@
+services:
+  nemo-guardrails:
+    build: ./guardrails
+    image: nemo-agent-guardrails-rails
+    container_name: nemo-guardrails
+    ports:
+      - "8001:8000"
+    environment:
+      # Values come from ./.env (docker compose loads it automatically).
+      - REQUESTY_API_KEY=${REQUESTY_API_KEY:-}
+      - BASE_URL=${BASE_URL:-https://router.requesty.ai/v1}
+      - MODEL_NAME=${MODEL_NAME:-openai/gpt-4.1-mini}
+    volumes:
+      # Rail configs live in the repo so students can edit them on the host
+      # and apply changes with: docker compose restart nemo-guardrails
+      - ./guardrails/config:/config-src:ro
+    restart: unless-stopped

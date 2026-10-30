@@ -1,0 +1,19 @@
+# Every question routes into this flow (see the fallback intent in
+# config.yml). "bot answer knowledge question" has no canned message, so the
+# LLM generates it — grounded in $relevant_chunks AFTER the retrieval rails
+# below have sanitized them.
+
+define user ask knowledge question
+  "what is the refund policy"
+
+define flow answer knowledge question
+  user ask knowledge question
+  bot answer knowledge question
+
+# The retrieval rail runs between "chunks retrieved" and "answer generated".
+# It rewrites the $relevant_chunks context variable via the custom action in
+# actions.py (drop injected chunks, then mask PII — one action, so no
+# half-sanitized intermediate ever reaches the LLM).
+
+define subflow sanitize retrieved chunks
+  $relevant_chunks = execute sanitize_retrieved_chunks

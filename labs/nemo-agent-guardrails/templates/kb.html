@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Base — NeMo Guardrails Lab{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-10 mx-auto">
+    <h4 class="mb-1">📚 NovaBank Knowledge Base</h4>
+    <p class="text-muted">These are the documents the agent's
+      <code>search_knowledge_base</code> tool retrieves from. Two of them are
+      intentionally tainted — exactly the kind of content that drifts into
+      real internal wikis. The retrieval rails exist because of them.</p>
+
+    {% for doc in docs %}
+    <div class="card mb-3 shadow-sm {% if doc.flag %}border-danger{% endif %}">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>{{ doc.name }}</strong>
+        {% if doc.flag == 'poisoned' %}
+          <span class="badge text-bg-danger">☣️ prompt injection — {{ doc.note }}</span>
+        {% elif doc.flag == 'pii' %}
+          <span class="badge text-bg-danger">🪪 PII — {{ doc.note }}</span>
+        {% else %}
+          <span class="badge text-bg-success">clean</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <pre class="kb-doc mb-0">{{ doc.content }}</pre>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
